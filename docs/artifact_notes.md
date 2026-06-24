@@ -27,6 +27,13 @@ Expected external assets:
   `BASE_MODEL_PATH` / `DIARC_MODEL_DIR`.
 - DPO outputs and evaluation artifacts under `outputs/`.
 
+Released adapters:
+
+- Best DiARC PEFT/LoRA adapters are available at
+  https://huggingface.co/yyxdnmd/DiARC-adapters.
+- The adapter repository is organized by backbone and benchmark, for example
+  `llama-3.2-3b/arc-agi-1/` and `qwen3-4b/conceptarc/`.
+
 The original experiments used offline local checkpoints. The release code keeps
 that behavior by default and lets users override all paths with environment
 variables.

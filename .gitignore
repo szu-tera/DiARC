@@ -54,6 +54,7 @@ tmp_output/
 trainer_output/
 unsloth_compiled_cache/
 .cache/
+src/diarc/arc_data/
 
 # Editors / OS
 .vscode/

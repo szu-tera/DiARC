@@ -59,4 +59,5 @@ def download_arc_data(arc_data_path):
         print(f'Downloaded arc {subset} set.')
 
 
-download_arc_data(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'arc_data'))
+if __name__ == "__main__":
+    download_arc_data(os.path.join(os.path.dirname(os.path.abspath(__file__)), "arc_data"))

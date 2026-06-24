@@ -14,6 +14,11 @@ model checkpoints, LoRA adapters, generated DPO JSONL files, and raw experiment
 outputs should be placed under local `data/`, `models/`, and `outputs/`
 directories when needed.
 
+The selected best DiARC adapters for three backbones across six ARC-style
+benchmarks are released on Hugging Face:
+
+https://huggingface.co/yyxdnmd/DiARC-adapters
+
 ## Layout
 
 ```text
@@ -115,6 +120,22 @@ python3 -m diarc.train_dpo_llama \
 
 For NeMo-Minitron and Qwen checkpoints, use `diarc.train_dpo_minitron` and
 `diarc.train_dpo_qwen` respectively.
+
+## Released Adapters
+
+The Hugging Face release contains one selected adapter for each model-dataset
+pair:
+
+```text
+yyxdnmd/DiARC-adapters
+  llama-3.2-3b/{arc-agi-1,arc-agi-2,miniarc,conceptarc,1d-arc,arccommunity}
+  minitron-8b/{arc-agi-1,arc-agi-2,miniarc,conceptarc,1d-arc,arccommunity}
+  qwen3-4b/{arc-agi-1,arc-agi-2,miniarc,conceptarc,1d-arc,arccommunity}
+```
+
+Each leaf directory contains a PEFT/LoRA adapter, its adapter config, tokenizer
+metadata when available, and a short README. The root `manifest.json` records
+the selected negative-construction method, setting, score, and tie notes.
 
 ## Evaluation
 

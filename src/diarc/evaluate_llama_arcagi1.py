@@ -190,7 +190,9 @@ def load_eval_dataset(arc_data_path: Path, eval_task_limit: int) -> ArcDataset:
     eval_dataset = ArcDataset.load_from_json(str(challenge_path))
     eval_dataset = eval_dataset.load_solutions(str(solution_path))
     if eval_task_limit > 0:
-        eval_dataset = eval_dataset.change_keys(sorted(eval_dataset.challenge.keys())[:eval_task_limit])
+        selected_base_keys = set(sorted(eval_dataset.challenge.keys())[:eval_task_limit])
+        selected_keys = [key for key in eval_dataset.keys if eval_dataset.get_base_key(key) in selected_base_keys]
+        eval_dataset = eval_dataset.change_keys(selected_keys)
     return eval_dataset
 
 
@@ -244,6 +246,26 @@ def load_lora_adapter_if_needed(model, lora_adapter_path: Optional[Path]):
     return model
 
 
+def sync_generation_special_tokens(model, tokenizer):
+    configs = [
+        getattr(model, "config", None),
+        getattr(model, "generation_config", None),
+    ]
+    for name in ["eos_token_id", "pad_token_id", "bos_token_id"]:
+        fallback_token_id = getattr(tokenizer, name, None)
+        for config in configs:
+            if config is None:
+                continue
+            token_id = getattr(config, name, None)
+            if isinstance(token_id, (list, tuple, set)):
+                token_id = [item for item in token_id if item is not None]
+                token_id = token_id if token_id else None
+            if token_id is None and fallback_token_id is not None:
+                token_id = fallback_token_id
+            if token_id is not None:
+                setattr(config, name, token_id)
+
+
 def run_direct_eval(
     *,
     protocol_name: str,
@@ -292,6 +314,7 @@ def run_direct_eval(
     eval_dataset = load_eval_dataset(arc_data_path, eval_task_limit)
     model, tokenizer = load_unsloth_model(str(base_model), bits=bits, device_map=get_single_device_map())
     model = load_lora_adapter_if_needed(model, lora_adapter_path)
+    sync_generation_special_tokens(model, tokenizer)
 
     FastLanguageModel.for_inference(model)
     disable_gradient_checkpointing(model)
@@ -409,6 +432,7 @@ def run_direct_ttt_only_eval(
 
     eval_dataset = load_eval_dataset(arc_data_path, eval_task_limit)
     tokenizer_model, tokenizer = load_unsloth_model(str(base_model), bits=bits, device_map=get_single_device_map())
+    sync_generation_special_tokens(tokenizer_model, tokenizer)
     fmt_opts = build_fmt_opts(tokenizer)
     del tokenizer_model
     gc.collect()
@@ -470,6 +494,7 @@ def run_direct_ttt_only_eval(
                     bits=bits,
                     device_map=get_single_device_map(),
                 )
+                sync_generation_special_tokens(model, task_tokenizer)
                 model = FastLanguageModel.get_peft_model(
                     model=model,
                     target_modules=LORA_LAYERS,
@@ -626,6 +651,7 @@ def run_direct_ttt_eval(
 
     eval_dataset = load_eval_dataset(arc_data_path, eval_task_limit)
     tokenizer_model, tokenizer = load_unsloth_model(str(base_model), bits=bits, device_map=get_single_device_map())
+    sync_generation_special_tokens(tokenizer_model, tokenizer)
     fmt_opts = build_fmt_opts(tokenizer)
     del tokenizer_model
     gc.collect()
@@ -687,6 +713,7 @@ def run_direct_ttt_eval(
                     bits=bits,
                     device_map=get_single_device_map(),
                 )
+                sync_generation_special_tokens(model, task_tokenizer)
                 model = FastLanguageModel.get_peft_model(
                     model=model,
                     target_modules=LORA_LAYERS,

@@ -12,8 +12,6 @@ except ImportError:  # pragma: no cover
 if str(RE_ARC_GEN_DIR) not in sys.path:
     sys.path.insert(0, str(RE_ARC_GEN_DIR))
 
-import verifiers  # noqa: E402
-
 
 FMT_OPTS = {
     "preprompt": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz",
@@ -22,6 +20,17 @@ FMT_OPTS = {
     "reply_end": "\n</s>",
     "lines_sep": "\n",
 }
+
+_VERIFIERS_MODULE = None
+
+
+def get_verifiers_module():
+    global _VERIFIERS_MODULE
+    if _VERIFIERS_MODULE is None:
+        import verifiers  # noqa: E402
+
+        _VERIFIERS_MODULE = verifiers
+    return _VERIFIERS_MODULE
 
 
 def is_grid(grid) -> bool:
@@ -78,7 +87,7 @@ def build_instruction(train_examples, test_input):
 
 
 def get_verifier(task_id):
-    return getattr(verifiers, f"verify_{task_id}")
+    return getattr(get_verifiers_module(), f"verify_{task_id}")
 
 
 def build_dpo_dataset_jsonl(
