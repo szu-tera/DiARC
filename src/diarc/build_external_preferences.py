@@ -46,8 +46,16 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
 
-DATASET_CHOICES = ("arcagi2", "conceptarc", "miniarc")
-TRANSFORM_CHOICES = ("all", "grid_block", "rigid_shift", "morphology", "random_perturb")
+DATASET_CHOICES = ("arcagi2", "conceptarc", "miniarc", "1d-arc", "arccommunity")
+TRANSFORM_CHOICES = (
+    "all",
+    "grid_block",
+    "rigid_shift",
+    "morphology",
+    "random_perturb",
+    "rigid_shift_1d",
+    "random_perturb_1d",
+)
 PROMPT_FORMAT_CHOICES = ("classic", "qwen")
 RANKER_CHOICES = ("auto", "clip", "grid")
 
@@ -143,9 +151,40 @@ def load_neoneye_tasks(dataset_root: Path) -> list[dict]:
 def load_tasks(dataset: str, dataset_root: Path, arcagi2_split: str) -> list[dict]:
     if dataset == "arcagi2":
         return load_arcagi2_tasks(dataset_root, arcagi2_split)
-    if dataset in {"conceptarc", "miniarc"}:
+    if dataset in {"conceptarc", "miniarc", "1d-arc", "arccommunity"}:
         return load_neoneye_tasks(dataset_root)
     raise ValueError(f"unsupported dataset: {dataset}")
+
+
+def resolve_transform_category(dataset: str, transform_category: str) -> str:
+    if dataset != "1d-arc":
+        if transform_category in {"rigid_shift_1d", "random_perturb_1d"}:
+            raise ValueError(f"{transform_category} is only supported for dataset='1d-arc'")
+        return transform_category
+
+    one_dimensional = {
+        "all": "all_1d",
+        "rigid_shift": "rigid_shift_1d",
+        "random_perturb": "random_perturb_1d",
+        "rigid_shift_1d": "rigid_shift_1d",
+        "random_perturb_1d": "random_perturb_1d",
+    }
+    if transform_category not in one_dimensional:
+        raise ValueError(
+            "1D-ARC supports only all, rigid_shift, random_perturb, "
+            "rigid_shift_1d, or random_perturb_1d transforms"
+        )
+    return one_dimensional[transform_category]
+
+
+def generate_transforms_for_dataset(dataset: str, transform_category: str):
+    resolved = resolve_transform_category(dataset, transform_category)
+    if resolved == "all_1d":
+        return (
+            generate_all_transforms(category_filter="rigid_shift_1d")
+            + generate_all_transforms(category_filter="random_perturb_1d")
+        )
+    return generate_all_transforms(category_filter=resolved)
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -362,7 +401,7 @@ def build_dataset(
         lines_sep="\n",
     )
 
-    transforms = generate_all_transforms(category_filter=transform_category)
+    transforms = generate_transforms_for_dataset(dataset, transform_category)
     augmentation_list = generate_16_augmentations()
     tasks = load_tasks(dataset, dataset_root, arcagi2_split)
     if max_tasks is not None:
