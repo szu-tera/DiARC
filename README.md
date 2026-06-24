@@ -46,14 +46,23 @@ data/
   arc-community/                   ARCcommunity benchmark files
 ```
 
-## Setup
+## Environment
 
 ```bash
-python3 -m pip install -r requirements.txt
+conda create -n diarc python=3.12 -y
+conda activate diarc
+python -m pip install -U pip
+python -m pip install -r requirements.txt
 export PYTHONPATH="$PWD/src:$PYTHONPATH"
 ```
 
-The code defaults to offline local checkpoints. Override paths as needed:
+The code was smoke-tested on Linux with NVIDIA L40 GPUs, CUDA-enabled PyTorch,
+`torch==2.8.0`, `transformers==4.52.4`, `trl==0.9.6`, `peft==0.15.2`,
+`bitsandbytes==0.48.1`, and `unsloth==2025.10.3`. Newer package versions may
+work, but the DPO/Unsloth stack is version-sensitive.
+
+The release defaults to offline local checkpoints. Put base models and optional
+external artifacts under repo-local folders, or override paths as needed:
 
 ```bash
 export DIARC_DATA_DIR=/path/to/data
@@ -61,6 +70,20 @@ export DIARC_MODEL_DIR=/path/to/models
 export DIARC_OUTPUT_DIR=/path/to/outputs
 export DIARC_RE_ARC_GEN_DIR=/path/to/re_arc_gen
 ```
+
+For a quick installation check:
+
+```bash
+python -m compileall -q src
+python - <<'PY'
+from diarc.arc_loader import ArcDataset
+ds = ArcDataset.load_from_neoneye("data/Mini-ARC")
+print(len(ds.keys), ds.keys[:2])
+PY
+```
+
+See `docs/environment.md` for a fuller setup guide, including GPU checks,
+artifact placement, and smoke-test commands.
 
 ## Build Preference Data
 
